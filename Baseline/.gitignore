@@ -1,8 +1,8 @@
 *.train
 *.test
-latentmotif_v0.12/homeo_norm_deBruijn_all_separate/*
-latentmotif_v0.12/homeo_pwm_all_separate/*
-latentmotif_v0.12/motif_data
-latentmotif_v0.12/parser_data
-latentmotif_v0.12/protein_data
+latentmotif_v0.12/motif/homeo_norm_deBruijn_all_separate/*
+latentmotif_v0.12/motif/homeo_pwm_all_separate/*
+latentmotif_v0.12/motif/motif_data
+latentmotif_v0.12/motif/parser_data
+latentmotif_v0.12/motif/protein_data
 
