@@ -36,7 +36,7 @@
 #define DEBUG_LEVEL 0
 
 void my_read_input_parameters(int argc, char* argv[], char *trainfile, char *modelfile,
-			      LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm, STRUCT_LEARN_PARM *struct_parm);
+			      LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm, STRUCT_LEARN_PARM *struct_parm, int* newBound);
 
 void my_wait_any_key();
 
@@ -80,7 +80,7 @@ double* add_list_nn(SVECTOR *a, long totwords)
 }
 
 
-SVECTOR* find_cutting_plane(EXAMPLE *ex, SVECTOR **fycache, double *margin, long m, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) {
+SVECTOR* find_cutting_plane(EXAMPLE *ex, SVECTOR **fycache, double *margin, long m, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, int newBound) {
 
   long i;
   SVECTOR *f, *fy, *fybar, *lhs;
@@ -97,7 +97,7 @@ SVECTOR* find_cutting_plane(EXAMPLE *ex, SVECTOR **fycache, double *margin, long
   lhs = NULL;
   *margin = 0;
   for (i=0;i<m;i++) {
-    find_most_violated_constraint_marginrescaling(ex[i].x, ex[i].y, &ybar, &hbar, sm, sparm);
+    find_most_violated_constraint_marginrescaling(ex[i].x, ex[i].y, &ybar, &hbar, sm, sparm, newBound);
     /* get difference vector */
     fy = copy_svector(fycache[i]);
     fybar = psi(ex[i].x,ybar,hbar,sm,sparm);
@@ -151,7 +151,7 @@ SVECTOR* find_cutting_plane(EXAMPLE *ex, SVECTOR **fycache, double *margin, long
 }
 
 
-double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double epsilon, SVECTOR **fycache, EXAMPLE *ex, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) {
+double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double epsilon, SVECTOR **fycache, EXAMPLE *ex, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, int newBound) {
   long i,j;
   double xi;
   double *alpha;
@@ -251,7 +251,7 @@ double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double
   proximal_rhs = NULL;
   cut_error = NULL; 
 
-  new_constraint = find_cutting_plane(ex, fycache, &margin, m, sm, sparm);
+  new_constraint = find_cutting_plane(ex, fycache, &margin, m, sm, sparm, newBound);
   value = margin - sprod_ns(w, new_constraint);
 	
   primal_obj_b = 0.5*sprod_nn(w_b,w_b,sm->sizePsi)+C*value;
@@ -396,7 +396,7 @@ double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double
       }
     }
 
-    new_constraint = find_cutting_plane(ex, fycache, &margin, m, sm, sparm);
+    new_constraint = find_cutting_plane(ex, fycache, &margin, m, sm, sparm, newBound);
     value = margin - sprod_ns(w, new_constraint);
 
     /* print primal objective */
@@ -541,9 +541,9 @@ int main(int argc, char* argv[]) {
   double cooling_eps; 
   double stop_crit; 
  
-
+  int newBound;
   /* read input parameters */
-  my_read_input_parameters(argc, argv, trainfile, modelfile, &learn_parm, &kernel_parm, &sparm); 
+  my_read_input_parameters(argc, argv, trainfile, modelfile, &learn_parm, &kernel_parm, &sparm, &newBound);
 
   epsilon = learn_parm.eps;
   C = learn_parm.svm_c;
@@ -589,7 +589,7 @@ int main(int argc, char* argv[]) {
   while ((outer_iter<2)||((!stop_crit)&&(outer_iter<MAX_OUTER_ITER))) { 
     printf("OUTER ITER %d\n", outer_iter); 
     /* cutting plane algorithm */
-    primal_obj = cutting_plane_algorithm(w, m, MAX_ITER, C, cooling_eps, fycache, ex, &sm, &sparm); 
+    primal_obj = cutting_plane_algorithm(w, m, MAX_ITER, C, cooling_eps, fycache, ex, &sm, &sparm, newBound);
     
     /* compute decrement in objective in this outer iteration */
     decrement = last_primal_obj - primal_obj;
@@ -643,7 +643,7 @@ int main(int argc, char* argv[]) {
 
 
 void my_read_input_parameters(int argc, char *argv[], char *trainfile, char* modelfile,
-			      LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm, STRUCT_LEARN_PARM *struct_parm) {
+			      LEARN_PARM *learn_parm, KERNEL_PARM *kernel_parm, STRUCT_LEARN_PARM *struct_parm, int* newBound) {
   
   long i;
 
@@ -672,7 +672,8 @@ void my_read_input_parameters(int argc, char *argv[], char *trainfile, char* mod
     case 'r': i++; learn_parm->biased_hyperplane=atol(argv[i]); break; 
     case 't': i++; kernel_parm->kernel_type=atol(argv[i]); break;
     case 'n': i++; learn_parm->maxiter=atol(argv[i]); break;
-    case 'p': i++; learn_parm->remove_inconsistent=atol(argv[i]); break; 
+    case 'p': i++; learn_parm->remove_inconsistent=atol(argv[i]); break;
+    case 'b': i++; *newBound = atol(argv[i]); break;
     case '-': strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);i++; strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);break; 
     default: printf("\nUnrecognized option %s!\n\n",argv[i]);
       exit(0);

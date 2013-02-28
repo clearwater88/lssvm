@@ -16,11 +16,12 @@ for f in data_files:
 
 
     res_f = open(res_dir + "res_" + f,'w');
+    res_f.write(str(len(seqs)) + "\n");
     for i in xrange(len(seqs)):
         pos = 1 if i < math.ceil(len(seqs)/2) else -1;
-        bg_only = 0;
+        non_bg_only = 1;
         res_f.write("seq" + str(i) + ":" +
                     str(pos) + ":" +
-                    str(bg_only) + ":" +
+                    str(non_bg_only) + ":" +
                     seqs[i] + "\n");
     res_f.close();
