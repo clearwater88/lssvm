@@ -274,10 +274,14 @@ void find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *yb
   pointers *ybar and *hbar. 
 */
   double max_score, score;
-  int *pattern_hash, max_pos,j,h;
+  int *pattern_hash, max_pos,i,j,h;
 
   pattern_hash = sm->pattern_hash[x.example_id];
-  
+
+  for (i = 0; i < sm->sizePsi;i++)
+	  printf("%f\n", sm->w[i]);
+  printf("\n");
+
   max_score = -1E10;
   max_pos = -1;
   for (h=0;h<x.length-sparm->motif_length-sparm->bg_markov_order;h++) {
@@ -311,6 +315,7 @@ void find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *yb
     }
 
   }
+  printf("here is max_score: %f\n",max_score);
   
 }
 

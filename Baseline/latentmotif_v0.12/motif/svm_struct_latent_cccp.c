@@ -564,7 +564,7 @@ int main(int argc, char* argv[]) {
   /* some training information */
   printf("C: %.8g\n", C);
   printf("epsilon: %.8g\n", epsilon);
-  printf("sample.n: %ld\n", sample.n); 
+  printf("sample.n: %d\n", sample.n);
   printf("sm.sizePsi: %ld\n", sm.sizePsi); fflush(stdout);
   
 
@@ -673,7 +673,10 @@ void my_read_input_parameters(int argc, char *argv[], char *trainfile, char* mod
     case 't': i++; kernel_parm->kernel_type=atol(argv[i]); break;
     case 'n': i++; learn_parm->maxiter=atol(argv[i]); break;
     case 'p': i++; learn_parm->remove_inconsistent=atol(argv[i]); break;
-    case 'b': i++; *newBound = atol(argv[i]); break;
+    case 'b':
+    	i++; *newBound = atol(argv[i]);
+    	printf("Using new bound?: %d\n",*newBound);
+    	break;
     case '-': strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);i++; strcpy(struct_parm->custom_argv[struct_parm->custom_argc++],argv[i]);break; 
     default: printf("\nUnrecognized option %s!\n\n",argv[i]);
       exit(0);
