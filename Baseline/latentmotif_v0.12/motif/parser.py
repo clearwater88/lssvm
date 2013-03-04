@@ -11,7 +11,7 @@ for f in data_files:
     print "on file: " + f
     seqs = [];
     for line in open(data_dir + f,'r'):
-        seq = re.search('\w+$',line).group(0);
+        seq = re.search('[AGCT]+',line).group(0);
         seqs.append(seq);
 
 
