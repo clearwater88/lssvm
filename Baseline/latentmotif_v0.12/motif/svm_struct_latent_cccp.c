@@ -233,8 +233,6 @@ double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double
 	kparm.coef_const=1;
 	strcpy(kparm.custom,"empty");
 
-
-
 	w_b = create_nvector(sm->sizePsi);
 	clear_nvector(w_b,sm->sizePsi);
 	/* warm start */
@@ -335,7 +333,6 @@ double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double
 		for (i=0;i<size_active;i++) {
 			proximal_rhs[i] = (1+rho)*delta[i] - rho*gammaG0[i];
 		}
-
 
 		/* solve QP to update alpha */
 		//dual_obj = 0;
@@ -513,14 +510,12 @@ double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double
 
 
 	/* copy and free */
-	/*
+/*
 	for (i=1;i<sm->sizePsi+1;i++) {
 		w[i] = w_b[i];
 	}
-	*/
-
 	free(w_b);
-
+*/
 
 	return(primal_obj_b);
 

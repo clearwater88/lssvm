@@ -317,8 +317,7 @@ double find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *
 			continue;
 		}
 
-		score = bg_score;
-
+		score = 0.0;
 		for (j=h;j<h+sparm->motif_length;j++) {
 			score += sm->w[sm->sizePsi-(4*(j-h)+base2int(x.sequence[j]))];
 			score -= sm->w[1+pattern_hash[j]];
@@ -331,7 +330,7 @@ double find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *
 
 	/* zero-one loss */
 	if (y.label==1) {
-		if (max_score-bg_score>1.0) {
+		if (max_score>1.0) {
 			ybar->label = 1;
 			hbar->position = max_pos;
 		} else {
@@ -340,7 +339,7 @@ double find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *
 			hbar->position = -1;
 		}
 	} else {
-		if (1.0+max_score-bg_score>0) {
+		if (1.0+max_score>0) {
 			max_score += 1.0; // wrong label penalty
 			ybar->label = 1;
 			hbar->position = max_pos;
@@ -349,56 +348,19 @@ double find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *
 			hbar->position = -1;
 		}
 	}
-	return max_score;
 
-}
-
-
-double evalTrueObjective(EXAMPLE * ex, int numEx, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, double C, double* w, int newBound) {
-	LABEL ybar;
-	LATENT_VAR hbar;
-
-	int i,j,h;
-	double res = 0;
-	LABEL y;
-	double score1 = 0.0;
-	double score2 = 0.0;
-
-
-	for (i=0; i < numEx; i++) {
-		PATTERN x = ex[i].x;
-		LABEL y = ex[i].y;
-		int* pattern_hash = sm->pattern_hash[x.example_id];
-
-		score1 += find_most_violated_constraint_marginrescaling(x, y, &ybar, ex[i].h, &hbar, sm, sparm, newBound);
-
-		//background model
-		for (j=0;j<x.length-sparm->bg_markov_order;j++) {
-			score2 += sm->w[1+pattern_hash[j]];
-		}
-		if (y.label==1) {s
-			// find score at previous best location
-
-			for (j=ex[i].h.position;j<h+sparm->motif_length;j++) {
-				score2 += sm->w[sm->sizePsi-(4*(j-h)+base2int(x.sequence[j]))];
-				score2 -= sm->w[1+pattern_hash[j]];
-			}
-		}
-
-
+	if (ybar->label == y.label) {
+	//	printf("it's correct!\n");
 	}
-	printf ("here score1: %f\n", score1);
-	printf ("here score2: %f\n", score2);
-	res = 0.5*sprod(w,w,sm->sizePsi)+C*(score1-score2);
-	printf("True objective: %f\n", res);
 
-	return res;
+	return bg_score+max_score;
+
 }
 
 LATENT_VAR infer_latent_variables(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) {
 	/*
   Complete the latent variable h for labeled examples, i.e.,
-  computing argmax_{h} <w,psi(x,y,h)>. 
+  computing argmax_{h} <w,psi(x,y,h)>.
 	 */
 
 	LATENT_VAR h;
@@ -429,6 +391,49 @@ LATENT_VAR infer_latent_variables(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LE
 	}
 
 	return(h);
+}
+
+double evalTrueObjective(EXAMPLE * ex, int numEx, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, double C, double* w, int newBound) {
+	LABEL ybar;
+	LATENT_VAR hbar;
+
+	int i,j;
+	LABEL y;
+	double score1 = 0.0;
+	double score2 = 0.0;
+
+	for (i=0; i < numEx; i++) {
+		PATTERN x = ex[i].x;
+		LABEL y = ex[i].y;
+		LATENT_VAR h = ex[i].h;
+
+		int* pattern_hash = sm->pattern_hash[x.example_id];
+
+		score1 += find_most_violated_constraint_marginrescaling(x, y, &ybar, h, &hbar, sm, sparm, newBound);
+
+		//background model
+		for (j=0;j<x.length-sparm->bg_markov_order;j++) {
+			score2 += sm->w[1+pattern_hash[j]];
+		}
+		if (y.label==1) {
+			// find score at previous best location
+
+			LATENT_VAR hOk = infer_latent_variables(x, y, sm, sparm);
+
+			for (j=hOk.position;j<hOk.position+sparm->motif_length;j++) {
+				score2 += sm->w[sm->sizePsi-(4*(j-hOk.position)+base2int(x.sequence[j]))];
+				score2 -= sm->w[1+pattern_hash[j]];
+			}
+		}
+
+
+	}
+	printf ("here score1: %f\n", score1);
+	printf ("here score2: %f\n", score2);
+	double res = 0.5*sprod(w,w,sm->sizePsi)+C*(score1-score2);
+	printf("True objective: %f\n", res);
+
+	return res;
 }
 
 

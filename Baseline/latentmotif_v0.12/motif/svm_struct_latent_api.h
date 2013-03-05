@@ -14,7 +14,7 @@
 /*                                                                      */
 /************************************************************************/
 
-#include "./svm_light/svm_common.h"
+#include "svm_light/svm_common.h"
 #include "svm_struct_latent_api_types.h"
 
 SAMPLE read_struct_examples(char *file, STRUCT_LEARN_PARM *sparm);
