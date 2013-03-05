@@ -1,5 +1,6 @@
 *.train
 *.test
+*/*.o
 latentmotif_v0.12/motif/homeo_norm_deBruijn_all_separate/*
 latentmotif_v0.12/motif/homeo_pwm_all_separate/*
 latentmotif_v0.12/motif/motif_data
