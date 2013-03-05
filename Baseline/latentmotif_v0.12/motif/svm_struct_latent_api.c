@@ -108,6 +108,16 @@ inline int base2int(char base) {
 	return(ans);
 }
 
+double sprod(double *a, double *b, long n) {
+  double ans=0.0;
+  long i;
+  for (i=1;i<n+1;i++) {
+    ans+=a[i]*b[i];
+  }
+  return(ans);
+}
+
+
 void init_struct_model(SAMPLE sample, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, LEARN_PARM *lparm, KERNEL_PARM *kparm) {
 	/*
   Initialize parameters in STRUCTMODEL sm. Set the diminension 
@@ -276,26 +286,39 @@ void classify_struct_example(PATTERN x, LABEL *y, LATENT_VAR *h, STRUCTMODEL *sm
 
 }
 
-void find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *ybar, LATENT_VAR h_old, LATENT_VAR *hbar, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, int newBound) {
+
+double find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *ybar, LATENT_VAR h_old, LATENT_VAR *hbar, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, int newBound) {
 	/*
   Finds the most violated constraint (loss-augmented inference), i.e.,
   computing argmax_{(ybar,hbar)} [<w,psi(x,ybar,hbar)> + loss(y,ybar,hbar)].
   The output (ybar,hbar) are stored at location pointed by 
   pointers *ybar and *hbar. 
 	 */
-	double max_score, score;
+	double max_score, bg_score, score;
 	int *pattern_hash, max_pos,i,j,h;
 
 	pattern_hash = sm->pattern_hash[x.example_id];
 
-	printf("pos: %d\n", h_old.position);
-
-	hstar_score = 0;
-
 	max_score = -1E10;
 	max_pos = -1;
+
+	bg_score = 0.0;
+	//background model
+	for (j=0;j<x.length-sparm->bg_markov_order;j++) {
+		bg_score += sm->w[1+pattern_hash[j]];
+	}
+
 	for (h=0;h<x.length-sparm->motif_length-sparm->bg_markov_order;h++) {
-		score = 0.0;
+
+		/* if newBound is set and y.label == 1, then we only consider the particular position we want.
+		 * if newBound is set and y.label == -1, then we are in the old-bound case since h is irrelevant
+		 */
+		if ((newBound > 0) && (y.label == 1) && (h != h_old.position)) {
+			continue;
+		}
+
+		score = bg_score;
+
 		for (j=h;j<h+sparm->motif_length;j++) {
 			score += sm->w[sm->sizePsi-(4*(j-h)+base2int(x.sequence[j]))];
 			score -= sm->w[1+pattern_hash[j]];
@@ -304,33 +327,72 @@ void find_most_violated_constraint_marginrescaling(PATTERN x, LABEL y, LABEL *yb
 			max_score = score;
 			max_pos = h;
 		}
-		// If we found our position; if h==-1 (no motif), hstar_score = 0;
-		if (h==h_old.position) {
-			hstar_score = score;
-		}
 	}
 
 	/* zero-one loss */
 	if (y.label==1) {
-		if (max_score>1.0) {
+		if (max_score-bg_score>1.0) {
 			ybar->label = 1;
 			hbar->position = max_pos;
 		} else {
+			max_score += 1.0; // wrong label penalty
 			ybar->label = -1;
 			hbar->position = -1;
 		}
 	} else {
-		if (1.0+max_score>0) {
+		if (1.0+max_score-bg_score>0) {
+			max_score += 1.0; // wrong label penalty
 			ybar->label = 1;
 			hbar->position = max_pos;
 		} else {
 			ybar->label = -1;
 			hbar->position = -1;
 		}
+	}
+	return max_score;
+
+}
+
+
+double evalTrueObjective(EXAMPLE * ex, int numEx, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm, double C, double* w, int newBound) {
+	LABEL ybar;
+	LATENT_VAR hbar;
+
+	int i,j,h;
+	double res = 0;
+	LABEL y;
+	double score1 = 0.0;
+	double score2 = 0.0;
+
+
+	for (i=0; i < numEx; i++) {
+		PATTERN x = ex[i].x;
+		LABEL y = ex[i].y;
+		int* pattern_hash = sm->pattern_hash[x.example_id];
+
+		score1 += find_most_violated_constraint_marginrescaling(x, y, &ybar, ex[i].h, &hbar, sm, sparm, newBound);
+
+		//background model
+		for (j=0;j<x.length-sparm->bg_markov_order;j++) {
+			score2 += sm->w[1+pattern_hash[j]];
+		}
+		if (y.label==1) {s
+			// find score at previous best location
+
+			for (j=ex[i].h.position;j<h+sparm->motif_length;j++) {
+				score2 += sm->w[sm->sizePsi-(4*(j-h)+base2int(x.sequence[j]))];
+				score2 -= sm->w[1+pattern_hash[j]];
+			}
+		}
+
 
 	}
-	//printf("here is max_score: %f\n",max_score);
+	printf ("here score1: %f\n", score1);
+	printf ("here score2: %f\n", score2);
+	res = 0.5*sprod(w,w,sm->sizePsi)+C*(score1-score2);
+	printf("True objective: %f\n", res);
 
+	return res;
 }
 
 LATENT_VAR infer_latent_variables(PATTERN x, LABEL y, STRUCTMODEL *sm, STRUCT_LEARN_PARM *sparm) {

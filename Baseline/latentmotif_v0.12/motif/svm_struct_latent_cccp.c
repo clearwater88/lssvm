@@ -597,6 +597,13 @@ int main(int argc, char* argv[]) {
 	last_primal_obj = 0;
 	decrement = 0;
 	cooling_eps = 0.5*C*epsilon;
+
+	//ex[i].h contains the max of the second value in true objective
+	evalTrueObjective(ex, m, &sm, &sparm, C, w);
+
+	time_t start = time(NULL);
+
+
 	while ((outer_iter<2)||((!stop_crit)&&(outer_iter<MAX_OUTER_ITER))) {
 		printf("OUTER ITER %d\n", outer_iter);
 		/* cutting plane algorithm */
@@ -630,6 +637,7 @@ int main(int argc, char* argv[]) {
 			fycache[i] = fy;
 		}
 
+		evalTrueObjective(ex, m, &sm, &sparm, C, w, newBound);
 
 		outer_iter++;
 
@@ -647,6 +655,9 @@ int main(int argc, char* argv[]) {
 		free_svector(fycache[i]);
 	}
 	free(fycache);
+
+	time_t stop = time(NULL);
+	printf("Time elapsed: %f s\n", difftime(stop, start));
 
 	return(0);
 
