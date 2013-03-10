@@ -97,7 +97,6 @@ SVECTOR* find_cutting_plane(EXAMPLE *ex, SVECTOR **fycache, double *margin, long
 	lhs = NULL;
 	*margin = 0;
 
-
 	for (i=0;i<m;i++) {
 		find_most_violated_constraint_marginrescaling(ex[i].x, ex[i].y, &ybar, ex[i].h, &hbar, sm, sparm, newBound);
 		/* get difference vector */
@@ -510,12 +509,12 @@ double cutting_plane_algorithm(double *w, long m, int MAX_ITER, double C, double
 
 
 	/* copy and free */
-/*
+
 	for (i=1;i<sm->sizePsi+1;i++) {
 		w[i] = w_b[i];
 	}
 	free(w_b);
-*/
+
 
 	return(primal_obj_b);
 
